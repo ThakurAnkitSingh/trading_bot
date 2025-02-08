@@ -1,18 +1,24 @@
 const knex = require('knex')(require('./knexfile')); // Import Knex instance
+const logger = require('./utils/logger');
 
 // Save a trade to the database
 const saveTrade = async (trade) => {
     try {
-        const [id] = await knex('trades').insert({
-            type: trade.type,
-            time: trade.time,
-            price: trade.price,
-            quantity: trade.quantity,
-            profit: trade.profit || null
-        });
-        console.log('Trade saved with ID:', id);
+        const [id] = await knex('trades')
+            .insert({
+                type: trade.type,
+                time: trade.time,
+                price: trade.price,
+                quantity: trade.quantity,
+                profit: trade.profit || null
+            })
+            .timeout(5000); // Add timeout
+
+        logger.info(`Trade saved successfully`, { tradeId: id, ...trade });
+        return id;
     } catch (err) {
-        console.error('Error saving trade:', err);
+        logger.error('Database error while saving trade:', err);
+        throw new Error('Failed to save trade to database');
     }
 };
 

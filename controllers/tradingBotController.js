@@ -1,17 +1,33 @@
-const tradingService = require('../services/tradingBotService');
+const tradingBot = require('../services/tradingBotService');
+const logger = require('../utils/logger');
 
-exports.startBot = (req, res) => {
+exports.startBot = async (req, res) => {
     try {
-        tradingService.startTrading();
-        res.status(200).json({ message: 'Trading bot started.' });
+        const { strategy = 'MA' } = req.query;
+
+        if (!['MA', 'RSI', 'HYBRID'].includes(strategy)) {
+            return res.status(400).json({
+                error: 'Invalid trading strategy'
+            });
+        }
+
+        tradingBot.tradingStrategy = strategy;
+        tradingBot.startTrading();
+
+        res.status(200).json({
+            message: `Trading bot started with ${strategy} strategy.`
+        });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to start the bot.' });
+        logger.error('Failed to start bot:', error);
+        res.status(500).json({
+            error: 'Internal server error while starting bot'
+        });
     }
 };
 
 exports.stopBot = (req, res) => {
     try {
-        tradingService.stopTrading();
+        tradingBot.stopTrading();
         res.status(200).json({ message: 'Trading bot stopped.' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to stop the bot.' });
@@ -20,7 +36,7 @@ exports.stopBot = (req, res) => {
 
 exports.getStatus = (req, res) => {
     try {
-        const status = tradingService.getBotStatus();
+        const status = tradingBot.getBotStatus();
         res.status(200).json(status);
     } catch (error) {
         res.status(500).json({ error: 'Failed to get bot status.' });
